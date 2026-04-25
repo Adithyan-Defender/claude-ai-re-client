@@ -17,8 +17,6 @@ This tool operates entirely within the user's authenticated browser session.
 
 All requests are processed by Claude.ai's official backend and are fully tied to the user's account. Works with free-tier accounts, but standard limits and usage restrictions still apply.
 
-> **Tip**: If you hit rate limits on one account, you can use multiple free-tier accounts and switch credentials with `--auto-fetch`.
-
 This project is intended for **protocol analysis and security research**, not for circumventing platform controls.
 
 ---
