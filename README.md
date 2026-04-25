@@ -6,6 +6,23 @@
 
 ---
 
+## 🔐 Important Clarification
+
+This tool operates entirely within the user's authenticated browser session.
+
+**It does NOT bypass:**
+- ❌ Billing or payment systems
+- ❌ Rate limits or usage caps
+- ❌ Account restrictions or content policies
+
+All requests are processed by Claude.ai's official backend and are fully tied to the user's account. Works with free-tier accounts, but standard limits and usage restrictions still apply.
+
+> **Tip**: If you hit rate limits on one account, you can use multiple free-tier accounts and switch credentials with `--auto-fetch`.
+
+This project is intended for **protocol analysis and security research**, not for circumventing platform controls.
+
+---
+
 ## 📋 Overview
 
 This tool captures Claude.ai browser session credentials (cookies, org ID) and replays them via direct HTTP calls to the internal REST API. It streams responses in real-time using Server-Sent Events (SSE) — exactly like the browser does, but from your terminal.
@@ -34,13 +51,13 @@ This tool captures Claude.ai browser session credentials (cookies, org ID) and r
 | **Live Streaming** | Word-by-word response streaming via SSE `content_callback` |
 | **Model Selection** | Switch between Haiku, Sonnet, Opus mid-conversation with `/model` |
 | **Session Memory** | Multi-turn conversations within a single session |
-| **Stealth Mode** | Auto-deletes conversations from Claude.ai history on exit |
+| **Session Cleanup** | Removes test conversations from Claude.ai history on exit |
 | **Dynamic Timezone** | Auto-detects system timezone (IANA) — no hardcoded fingerprints |
 | **Secure CDP** | DevTools bound to `127.0.0.1` with random ephemeral port |
 | **Safe Credential Storage** | Session stored outside repo with restricted permissions |
 | **Rate Limit Handler** | Auto-fallback to Haiku when rate-limited, with retry logic |
 | **Batch Mode** | Process multiple prompts from a file |
-| **Jailbreak Mode** | Load system prompts from external files |
+| **Custom Prompt Loading** | Load prompts from external files for batch or scripted use |
 | **TLS Bypass** | `curl_cffi` Chrome impersonation defeats Cloudflare |
 
 ---
@@ -111,7 +128,7 @@ python claude_ai_client.py --prompt "explain quantum computing"
 # Choose model
 python claude_ai_client.py --model opus
 
-# Disable stealth (keep conversations in browser history)
+# Disable session cleanup (keep conversations in browser history)
 python claude_ai_client.py --no-stealth
 ```
 
@@ -166,11 +183,11 @@ Use these commands during a chat session (type `/help` at any time):
 | `/help` | Show all available commands |
 | `/model <name>` | Switch model (e.g., `/model haiku`, `/model opus`) |
 | `/models` | List all available models with current selection |
-| `/stealth on\|off` | Toggle stealth mode (auto-cleanup on exit) |
+| `/stealth on\|off` | Toggle session cleanup (auto-remove test conversations on exit) |
 | `/new` | Start a fresh conversation (clears context) |
 | `/cleanup` | Delete current session conversation immediately |
 | `/clear-session` | Wipe stored credentials from disk and memory |
-| `exit` / `quit` / `q` | Exit (auto-cleans if stealth is on) |
+| `exit` / `quit` / `q` | Exit (auto-cleans test conversations if cleanup is on) |
 
 ### Model Shortcuts
 
@@ -188,19 +205,19 @@ Use these commands during a chat session (type `/help` at any time):
 
 ---
 
-## 🔒 Stealth Mode
+## 🧹 Session Cleanup
 
-Stealth mode is **enabled by default**. It ensures your CLI conversations are invisible in the Claude.ai browser interface.
+Session cleanup is **enabled by default**. It automatically removes test conversations from your Claude.ai account when you exit, keeping your browser sidebar clean.
 
 **How it works:**
 1. Each session creates a new conversation via the REST API
 2. All prompts in the session share context (multi-turn memory)
-3. On exit (or Ctrl+C), the conversation is deleted via `DELETE /api/organizations/{org_id}/chat_conversations/{conv_id}`
-4. The conversation never appears in the browser sidebar
+3. On exit (or Ctrl+C), the test conversation is deleted via `DELETE /api/organizations/{org_id}/chat_conversations/{conv_id}`
+4. The test conversation never persists in the browser sidebar
 
-**Control stealth:**
+**Control session cleanup:**
 ```bash
-# Disable via CLI flag
+# Disable cleanup (keep conversations visible in browser)
 python claude_ai_client.py --no-stealth
 
 # Toggle during session
@@ -222,12 +239,12 @@ python claude_ai_client.py --batch prompts.txt
 
 Results are saved to `batch_results.json`.
 
-### Jailbreak Mode
+### Custom Prompt Loading
 
-Load a full prompt from an external file:
+Load a full prompt from an external file (useful for long or reusable prompts):
 
 ```bash
-python claude_ai_client.py --jailbreak system_prompt.txt
+python claude_ai_client.py --jailbreak prompt_file.txt
 ```
 
 ### CLI Flags
@@ -287,7 +304,7 @@ claude_ai_client.py
 ├── HTTP Engine         — curl_cffi with Chrome TLS impersonation
 ├── SSE Stream Parser   — Real-time content_block_delta extraction
 ├── Rate Limit Handler  — Auto-fallback to Haiku + retry
-├── Stealth Engine      — Conversation deletion on exit
+├── Session Cleanup     — Test conversation deletion on exit
 └── REPL                — Interactive commands (/model, /new, /stealth, /clear-session)
 ```
 
@@ -297,7 +314,7 @@ claude_ai_client.py
 
 ```
 claude-ai-re-client/
-├── claude_ai_client.py    # Main client (auth + streaming + stealth)
+├── claude_ai_client.py    # Main client (auth + streaming + session cleanup)
 ├── requirements.txt       # Python dependencies
 ├── .gitignore             # Excludes credentials and session data
 └── README.md              # This file
@@ -336,7 +353,7 @@ claude-ai-re-client/
 
 ## ⚠️ Security Warnings
 
-> **This tool uses your real authenticated session. All extracted credentials must be treated with the same sensitivity as your account password.**
+> **⚠ This tool uses your active session credentials. Treat them as sensitive and never share or commit them.** All extracted credentials carry the same access level as your account password — anyone with your `claude_session.json` has full access to your Claude.ai account.
 
 ### 🔴 Session Hijacking Risk
 - The `claude_session.json` file contains your **full session key and cookies**. Anyone with this file can impersonate your Claude.ai account — send messages, read conversations, and access your data.
