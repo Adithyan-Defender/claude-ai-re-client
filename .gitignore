@@ -1,0 +1,14 @@
+# Session credentials (contains session keys, cookies, org IDs)
+claude_session.json
+
+# Browser profile (contains session cookies/auth)
+claude_profile/
+
+# Response cache
+last_response.txt
+batch_results.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
